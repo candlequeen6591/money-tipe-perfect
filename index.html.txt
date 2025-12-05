@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>わくわく！マネータイプ診断！</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        /* デザイン設定 */
+        body {
+            font-family: "Hiragino Kaku Gothic ProN", "メイリオ", sans-serif;
+            background-color: #FFF8E1; 
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            user-select: none;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border: 4px solid #004D40; 
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: height 0.3s;
+        }
+        h1 {
+            color: #004D40; 
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        /* アニメーション用クラス */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 表紙画面 */
+        #start-screen { display: block; }
+        .start-lead {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFC107;
+            margin-bottom: 30px;
+        }
+        .start-desc {
+            font-size: 15px;
+            color: #555;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .start-btn-large {
+            background-color: #FFC107; 
+            color: #004D40; 
+            border: none;
+            border-radius: 50px;
+            padding: 20px 40px;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 6px #FF8F00; 
+            width: 80%;
+            margin: 0 auto;
+            display: block;
+            animation: pulse 2s infinite;
+        }
+        .start-btn-large:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px #FF8F00;
+        }
+
+        /* 質問画面・結果画面 */
+        #quiz-area, #result-area { display: none; }
+
+        .privacy-note {
+            font-size: 13px;
+            color: #1A795A;
+            background-color: #E8F5E9;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            line-height: 1.5;
+            text-align: left;
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            height: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #FFC107;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .question-box {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            min-height: 60px;
+            padding: 10px;
+            background-color: #E8F5E9; 
+            border-radius: 10px;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        button.option-btn {
+            background-color: #FFC107; 
+            color: #333; 
+            border: none;
+            border-radius: 50px;
+            padding: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 4px #FF8F00; 
+            text-align: left;
+            padding-left: 25px;
+            font-weight: bold;
+        }
+        button.option-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 #FF8F00;
+        }
+        button.option-btn:hover {
+            background-color: #FFB300;
+        }
+        button.neutral-btn {
+            background-color: #bdbdbd;
+            box-shadow: 0 4px #757575;
+            color: white; 
+        }
+        button.neutral-btn:hover {
+            background-color: #a0a0a0;
+        }
+        
+        /* 結果画面 */
+        .animal-icon {
+            font-size: 100px;
+            display: block;
+            margin: 10px 0;
+            animation: pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .type-title {
+            font-size: 28px;
+            color: #004D40; 
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .catchphrase {
+            font-weight: bold;
+            color: #FFC107; 
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .chart-container {
+            position: relative;
+            margin: 20px auto;
+            height: 300px;
+            width: 100%;
+        }
+        .desc {
+            text-align: left;
+            background: #FFFDE7; 
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            line-height: 1.8;
+            border: 2px dashed #FFC107; 
+        }
+        
+        .share-area {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .download-btn {
+            background-color: #004D40;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px #00332B;
+            width: 80%;
+            margin: 15px auto 0;
+            display: block;
+            transition: transform 0.1s;
+        }
+        .download-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 #00332B;
+        }
+
+        .share-btn {
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            display: inline-block;
+            text-align: center;
+        }
+        .share-twitter { background-color: #1DA1F2; }
+        .share-line { background-color: #06C755; }
+
+        .restart-btn {
+            background-color: #1976D2; 
+            box-shadow: 0 4px #0D47A1;
+            margin-top: 30px;
+            text-align: center;
+            border-radius: 10px;
+            color: white;
+            width: 100%;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+
+        @keyframes pop {
+            0% {transform: scale(0);}
+            100% {transform: scale(1);}
+        }
+        @keyframes pulse {
+            0% {transform: scale(1);}
+            50% {transform: scale(1.05);}
+            100% {transform: scale(1);}
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="start-screen">
+        <h1>💎 わくわく！マネータイプ診断！ 💎</h1>
+        <p class="start-lead">キミのお金の使い方、どの動物タイプ？</p>
+        <div class="start-desc">
+            <p>お金の使い方には、その人の個性が隠れています。<br>
+            たった16問の質問に答えるだけで、あなたの「マネータイプ」と、お金の「バランス」が分かります。</p>
+            <p>※回答は誰にも見られません。直感で答えてね！</p>
+        </div>
+        <button class="start-btn-large" onclick="startGame()">診断をスタート！</button>
+    </div>
+
+    <div id="quiz-area">
+        <p class="privacy-note">
+            ※回答は本人以外知ることができない仕組みです。本音で回答してね。
+        </p>
+        <p>しつもん <span id="q-number">1</span> / 16</p>
+        <div class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div id="quiz-content" class="fade-in">
+            <div class="question-box" id="question-text">ここに質問が出ます</div>
+            <div class="options" id="options-container"></div>
+        </div>
+    </div>
+
+    <div id="result-area" class="result-area">
+        <div id="result-content-container">
+            <h1>診断結果！</h1>
+            <div id="result-content"></div>
+            
+            <div class="chart-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+
+            <div id="
